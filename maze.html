@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTTP Request Maze</title>
+<style>
+:root{
+  --bg:#10100f;
+  --panel:#1b1a17;
+  --panel2:#24221d;
+  --ink:#f6f0df;
+  --muted:#a9a18d;
+  --line:#3a352a;
+  --gold:#d3a84f;
+  --blue:#66c7d8;
+  --red:#ee6f59;
+  --green:#8fd36a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(0deg,rgba(255,255,255,.025) 1px,transparent 1px),
+    radial-gradient(circle at 82% 14%,rgba(211,168,79,.16),transparent 30rem),
+    var(--bg);
+  background-size:28px 28px,28px 28px,auto,auto;
+  color:var(--ink);
+  font-family:Georgia,"Yu Mincho","Hiragino Mincho ProN",serif;
+}
+button,textarea{font:inherit}
+a{color:inherit}
+.shell{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:28px 0 40px}
+.top{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-bottom:22px}
+.kicker{color:var(--gold);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+h1{font-size:clamp(34px,6vw,76px);line-height:.92;margin:.12em 0 0;letter-spacing:0}
+.sub{max-width:640px;color:var(--muted);line-height:1.75;margin:12px 0 0}
+.home{border:1px solid var(--line);padding:10px 13px;text-decoration:none;color:var(--muted);background:rgba(27,26,23,.78)}
+.board{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(340px,.95fr);gap:18px}
+.panel{background:rgba(27,26,23,.9);border:1px solid var(--line);border-radius:8px}
+.status-panel{padding:18px}
+.now{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-bottom:16px}
+.code{
+  width:112px;aspect-ratio:1;border:1px solid var(--gold);display:grid;place-items:center;
+  color:var(--gold);font-size:38px;font-weight:700;background:#12110f;border-radius:8px;
+}
+.name{font-size:26px;line-height:1.1;margin:0 0 6px}
+.message{color:var(--muted);line-height:1.65;margin:0}
+.hint{background:#11100e;border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0}
+.hint strong{color:var(--blue);display:block;margin-bottom:6px}
+.hint p{margin:0;color:var(--ink);line-height:1.65}
+.progress{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin-top:15px}
+.step{height:9px;background:#302c23;border-radius:99px}
+.step.done{background:var(--gold)}
+.step.goal{background:var(--green)}
+.form{padding:18px}
+label{display:block;color:var(--gold);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:9px}
+textarea{
+  width:100%;min-height:250px;resize:vertical;border:1px solid var(--line);border-radius:8px;
+  background:#0c0c0b;color:var(--ink);padding:14px;line-height:1.5;
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:14px;
+}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button{
+  border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);
+  padding:10px 13px;cursor:pointer;
+}
+button.primary{background:var(--gold);border-color:var(--gold);color:#15130d;font-weight:700}
+button:hover{filter:brightness(1.08)}
+.result{min-height:48px;margin-top:12px;color:var(--muted);line-height:1.55}
+.result.ok{color:var(--green)}
+.result.bad{color:var(--red)}
+.map{margin-top:18px;padding:14px}
+.map-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.map-title{font-size:17px;color:var(--gold)}
+.legend{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:7px}
+.cell{
+  min-height:47px;border:1px solid var(--line);background:#14130f;border-radius:6px;
+  display:grid;place-items:center;color:#8f8775;text-decoration:none;font-size:14px;position:relative;
+}
+.cell.route{color:var(--ink);border-color:#665735}
+.cell.visited{background:#2c2619;border-color:var(--gold);color:var(--gold)}
+.cell.current{outline:2px solid var(--blue);outline-offset:2px;color:var(--blue)}
+.cell.goal-cell{border-color:var(--green);color:var(--green)}
+.cell.trap{border-color:#4a2822;color:#c47b6d}
+.sample{margin-top:12px;color:var(--muted);font-size:13px;line-height:1.6}
+@media(max-width:820px){
+  .top,.board{grid-template-columns:1fr}
+  .home{justify-self:start}
+  .code{width:92px;font-size:31px}
+}
+</style>
+<body>
+<main class="shell">
+  <header class="top">
+    <div>
+      <div class="kicker">nc request maze</div>
+      <h1>HTTP Request Maze</h1>
+      <p class="sub">raw HTTP request をフォームに送って、返るステータスコードを意図的に変えながら進む迷路です。現在地のヒントを読み、最後は 418 のティーポットへ到達してください。</p>
+    </div>
+    <a class="home" href="index.html">一覧へ戻る</a>
+  </header>
+
+  <section class="board">
+    <div>
+      <section class="panel status-panel">
+        <div class="now">
+          <div class="code" id="currentCode">100</div>
+          <div>
+            <h2 class="name" id="currentName">100 Continue</h2>
+            <p class="message" id="currentMessage">ええで、そのまま続けて送ってきてや。</p>
+          </div>
+        </div>
+        <div class="hint">
+          <strong>次のページのヒント</strong>
+          <p id="hintText"></p>
+        </div>
+        <div class="progress" id="progress"></div>
+      </section>
+
+      <section class="panel map">
+        <div class="map-head">
+          <div class="map-title">Status Map</div>
+          <div class="legend">金:通過済み / 青:現在地 / 緑:ゴール</div>
+        </div>
+        <div class="grid" id="statusGrid"></div>
+      </section>
+    </div>
+
+    <section class="panel form">
+      <label for="requestInput">raw request</label>
+      <textarea id="requestInput" spellcheck="false"></textarea>
+      <div class="actions">
+        <button class="primary" id="sendButton" type="button">送信</button>
+        <button id="sampleButton" type="button">現在地のサンプル</button>
+        <button id="resetButton" type="button">最初から</button>
+      </div>
+      <div class="result" id="result"></div>
+      <div class="sample">例: <code>printf 'GET / HTTP/1.1\r\nHost: maze.local\r\n\r\n' | nc localhost 8080</code> の中身を貼る想定です。</div>
+    </section>
+  </section>
+</main>
+
+<script>
+const statuses = [
+  [100,"Continue","👍","ええで、そのまま続けて送ってきてや。"],
+  [101,"Switching Protocols","🔄","通信のやり方、今から切り替えるで。"],
+  [102,"Processing","🛠️","いま処理中や。ちょっと待っとき。"],
+  [103,"Early Hints","💡","先にヒントだけ渡しとくわ。準備しといてな。"],
+  [104,"Upload Resumption Supported","⏫","アップロードの続きから再開できるで。"],
+  [200,"OK","✅","うまいこといったで。問題なしや。"],
+  [201,"Created","🆕","新しいもん作っといたで。"],
+  [202,"Accepted","📩","受け取ったで。ただ、処理はこれからや。"],
+  [203,"Non-Authoritative Information","🗞️","情報は返すけど、元ネタそのものとは限らへんで。"],
+  [204,"No Content","📭","成功やけど、返す中身はないで。"],
+  [205,"Reset Content","🧹","成功や。画面やフォームをリセットしといてな。"],
+  [206,"Partial Content","🧩","一部だけ返すで。動画の途中とかで使うやつや。"],
+  [207,"Multi-Status","📋","いろんな結果をまとめて返すで。"],
+  [208,"Already Reported","🔁","それ、もう報告済みやで。"],
+  [226,"IM Used","🧮","差分処理した結果を返すで。"],
+  [300,"Multiple Choices","🧭","候補がいくつかあるで。どれにする？"],
+  [301,"Moved Permanently","🏠","そこ、ずっと別の場所に引っ越したで。"],
+  [302,"Found","🚧","とりあえず別の場所にあるで。"],
+  [303,"See Other","👀","結果は別のURLを見に行ってな。"],
+  [304,"Not Modified","♻️","前と変わってへんから、手元のキャッシュ使ってええで。"],
+  [305,"Use Proxy","🧱","プロキシ通してアクセスしてな。今はほぼ使われへんで。"],
+  [306,"Unused","💤","昔の名残や。今は使わへん番号やで。"],
+  [307,"Temporary Redirect","↪️","一時的に別の場所へ行ってな。方法は変えんといてや。"],
+  [308,"Permanent Redirect","🔀","ずっと別の場所へ移ったで。方法は変えんといてや。"],
+  [400,"Bad Request","😵","リクエストの書き方がおかしいで。"],
+  [401,"Unauthorized","🔐","認証が必要やで。ログインしてから来てな。"],
+  [402,"Payment Required","💸","お金が必要、という予定の番号やけど、あんまり使われへんで。"],
+  [403,"Forbidden","⛔","あかん。見る権限ないで。"],
+  [404,"Not Found","🐈","そんなページ、見つからへんかったわ。"],
+  [405,"Method Not Allowed","🚫","そのやり方、ここでは使えへんで。GETとかPOSTの話や。"],
+  [406,"Not Acceptable","🙅","君が欲しい形式では返されへんで。"],
+  [407,"Proxy Authentication Required","🧱🔐","プロキシの認証が必要やで。"],
+  [408,"Request Timeout","⏰","待ってたけど、リクエスト来るの遅すぎや。"],
+  [409,"Conflict","⚔️","状態がぶつかってるで。更新競合みたいなやつや。"],
+  [410,"Gone","👻","もう消えたで。戻ってこーへんと思ってな。"],
+  [411,"Length Required","📏","Content-Length が必要やで。長さを書いてきてな。"],
+  [412,"Precondition Failed","📌","条件が合わへんかったで。"],
+  [413,"Content Too Large","🐘","送ってきた中身がデカすぎるわ。"],
+  [414,"URI Too Long","🐍","URLが長すぎるで。"],
+  [415,"Unsupported Media Type","📦","そのデータ形式は対応してへんで。"],
+  [416,"Range Not Satisfiable","🎯","指定された範囲、返されへんで。"],
+  [417,"Expectation Failed","🤔","期待された条件を満たせへんかったわ。"],
+  [418,"Unused","🫖","例のティーポットで有名やけど、IANAでは今は Unused やで。"],
+  [421,"Misdirected Request","🧭❌","行き先まちごうてるで。このサーバ宛ちゃうわ。"],
+  [422,"Unprocessable Content","🧠","文法は合ってるけど、中身の意味が処理できへんで。"],
+  [423,"Locked","🔒","ロックされてるから触られへんで。"],
+  [424,"Failed Dependency","🧱","前提になってる処理が失敗したから、これも無理や。"],
+  [425,"Too Early","🐣","まだ早いで。リプレイ攻撃の危険があるかもしれへん。"],
+  [426,"Upgrade Required","⬆️","新しい通信方式にアップグレードしてな。"],
+  [428,"Precondition Required","📋","条件をつけてリクエストしてきてな。"],
+  [429,"Too Many Requests","🚦","リクエスト多すぎや。ちょっと落ち着いて。"],
+  [431,"Request Header Fields Too Large","🧾","ヘッダーがデカすぎるで。"],
+  [451,"Unavailable For Legal Reasons","⚖️","法律上の理由で見せられへんで。"],
+  [500,"Internal Server Error","💥","サーバの中でなんか壊れたわ。"],
+  [501,"Not Implemented","🧰","その機能、まだ実装してへんで。"],
+  [502,"Bad Gateway","🚪💥","中継先から変な返事が来たで。"],
+  [503,"Service Unavailable","🚧","いまサービス使われへんで。混雑かメンテかもな。"],
+  [504,"Gateway Timeout","⏳","中継先の返事が遅すぎて時間切れや。"],
+  [505,"HTTP Version Not Supported","📜","そのHTTPバージョンは対応してへんで。"],
+  [506,"Variant Also Negotiates","🔁","サーバ設定がややこしいループになってるで。"],
+  [507,"Insufficient Storage","🗄️","保存する場所が足りへんで。"],
+  [508,"Loop Detected","🔄","無限ループっぽいのを見つけたで。"],
+  [510,"Not Extended","🧓","拡張が足りへん、という古い扱いのコードやで。"],
+  [511,"Network Authentication Required","📶🔐","ネットワーク認証が必要やで。Wi-Fiのログイン画面みたいなやつや。"]
+];
+
+const byCode = Object.fromEntries(statuses.map(([code,name,emoji,message]) => [code,{code,name,emoji,message}]));
+const route = [100,103,101,426,104,202,201,303,418];
+const rules = {
+  100: {
+    hint: "まずは最終レスポンス前にリンクだけ先出しする。GET で /hints を要求し、Accept に text/html を入れる。",
+    sample: "GET /hints HTTP/1.1\r\nHost: maze.local\r\nAccept: text/html\r\n\r\n",
+    test: req => req.method === "GET" && req.path === "/hints" && has(req,"accept","text/html"),
+    next: 103
+  },
+  103: {
+    hint: "ヒントを受け取ったら通信方式を切り替える。Connection と Upgrade で websocket を要求する。",
+    sample: "GET /socket HTTP/1.1\r\nHost: maze.local\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n",
+    test: req => req.method === "GET" && req.path === "/socket" && has(req,"connection","upgrade") && has(req,"upgrade","websocket"),
+    next: 101
+  },
+  101: {
+    hint: "切替先は古いままだと拒否される。HTTP/1.1 のまま /secure に入り、Upgrade-Insecure-Requests: 1 を付ける。",
+    sample: "GET /secure HTTP/1.1\r\nHost: maze.local\r\nUpgrade-Insecure-Requests: 1\r\n\r\n",
+    test: req => req.method === "GET" && req.path === "/secure" && req.version === "HTTP/1.1" && get(req,"upgrade-insecure-requests") === "1",
+    next: 426
+  },
+  426: {
+    hint: "アップロードの中断地点から再開する。PATCH /upload に Upload-Offset と Upload-Length を付ける。",
+    sample: "PATCH /upload HTTP/1.1\r\nHost: maze.local\r\nUpload-Offset: 128\r\nUpload-Length: 512\r\nContent-Length: 0\r\n\r\n",
+    test: req => req.method === "PATCH" && req.path === "/upload" && numberHeader(req,"upload-offset") >= 1 && numberHeader(req,"upload-length") > numberHeader(req,"upload-offset"),
+    next: 104
+  },
+  104: {
+    hint: "再開できるなら処理キューに積む。POST /jobs に JSON を送り、Prefer: respond-async を付ける。",
+    sample: "POST /jobs HTTP/1.1\r\nHost: maze.local\r\nContent-Type: application/json\r\nPrefer: respond-async\r\nContent-Length: 16\r\n\r\n{\"brew\":\"tea\"}",
+    test: req => req.method === "POST" && req.path === "/jobs" && has(req,"content-type","application/json") && has(req,"prefer","respond-async") && req.body.trim().startsWith("{"),
+    next: 202
+  },
+  202: {
+    hint: "キューの結果としてリソースを作る。PUT /pots/teapot に JSON を送り、名前を teapot にする。",
+    sample: "PUT /pots/teapot HTTP/1.1\r\nHost: maze.local\r\nContent-Type: application/json\r\nContent-Length: 17\r\n\r\n{\"name\":\"teapot\"}",
+    test: req => req.method === "PUT" && req.path === "/pots/teapot" && /\"name\"\\s*:\\s*\"teapot\"/.test(req.body),
+    next: 201
+  },
+  201: {
+    hint: "作ったものを直接返さず、別ページを見に行かせる。POST /brew の本文に see=other を入れる。",
+    sample: "POST /brew HTTP/1.1\r\nHost: maze.local\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 9\r\n\r\nsee=other",
+    test: req => req.method === "POST" && req.path === "/brew" && /(^|&)see=other(&|$)/.test(req.body.trim()),
+    next: 303
+  },
+  303: {
+    hint: "最後はコーヒーではなくティーポットに尋ねる。BREW /teapot に Accept: message/teapot を付ける。",
+    sample: "BREW /teapot HTTP/1.1\r\nHost: maze.local\r\nAccept: message/teapot\r\n\r\n",
+    test: req => req.method === "BREW" && req.path === "/teapot" && has(req,"accept","message/teapot"),
+    next: 418
+  },
+  418: {
+    hint: "ゴール。ティーポットに着きました。",
+    sample: "BREW /teapot HTTP/1.1\r\nHost: maze.local\r\nAccept: message/teapot\r\n\r\n",
+    test: () => false,
+    next: 418
+  }
+};
+
+let current = 100;
+let visited = new Set([100]);
+
+const currentCode = document.getElementById("currentCode");
+const currentName = document.getElementById("currentName");
+const currentMessage = document.getElementById("currentMessage");
+const hintText = document.getElementById("hintText");
+const requestInput = document.getElementById("requestInput");
+const result = document.getElementById("result");
+const statusGrid = document.getElementById("statusGrid");
+const progress = document.getElementById("progress");
+
+function parseRequest(raw){
+  const normalized = raw.replace(/\r\n/g,"\n");
+  const [head,...bodyParts] = normalized.split(/\n\n/);
+  const lines = head.split("\n").filter(Boolean);
+  const requestLine = (lines.shift() || "").trim().split(/\s+/);
+  const headers = {};
+  for(const line of lines){
+    const index = line.indexOf(":");
+    if(index === -1) continue;
+    headers[line.slice(0,index).trim().toLowerCase()] = line.slice(index + 1).trim();
+  }
+  return {
+    method: requestLine[0] || "",
+    path: requestLine[1] || "",
+    version: requestLine[2] || "",
+    headers,
+    body: bodyParts.join("\n\n")
+  };
+}
+
+function get(req,name){return req.headers[name] || ""}
+function has(req,name,value){return get(req,name).toLowerCase().includes(value)}
+function numberHeader(req,name){
+  const value = Number.parseInt(get(req,name),10);
+  return Number.isFinite(value) ? value : -1;
+}
+
+function fallbackStatus(req){
+  if(!req.method || !req.path || !req.version) return 400;
+  if(req.version && !/^HTTP\/(1\.0|1\.1|2|3)$/.test(req.version)) return 505;
+  if(req.path.length > 90) return 414;
+  if(Object.values(req.headers).join("").length > 240) return 431;
+  if(req.method === "DELETE") return 403;
+  if(!["GET","POST","PUT","PATCH","BREW"].includes(req.method)) return 501;
+  if(req.method === "POST" && !get(req,"content-length")) return 411;
+  if(get(req,"content-type") && !/json|x-www-form-urlencoded|text\/plain/.test(get(req,"content-type").toLowerCase())) return 415;
+  if(req.path === "/missing") return 404;
+  if(req.path === "/locked") return 423;
+  if(req.path === "/loop") return 508;
+  if(req.path === "/legal") return 451;
+  if(req.path === "/auth") return 401;
+  if(req.path === "/proxy") return 407;
+  if(req.path === "/pay") return 402;
+  if(req.path === "/old") return 410;
+  if(req.path === "/busy") return 503;
+  if(req.path === "/gateway") return 502;
+  if(req.path === "/timeout") return 504;
+  if(req.path === "/storage") return 507;
+  if(req.path === "/range" && has(req,"range","bytes")) return 206;
+  if(req.path === "/cache" && has(req,"if-none-match","maze")) return 304;
+  if(req.path === "/multi") return 207;
+  if(req.path === "/choices") return 300;
+  return 404;
+}
+
+function submitRequest(){
+  const rule = rules[current];
+  const req = parseRequest(requestInput.value);
+  if(current === 418){
+    result.className = "result ok";
+    result.textContent = "すでにゴールです。最初から遊ぶならリセットしてください。";
+    return;
+  }
+  if(rule.test(req)){
+    current = rule.next;
+    visited.add(current);
+    const status = byCode[current];
+    result.className = current === 418 ? "result ok" : "result ok";
+    result.textContent = current === 418
+      ? `HTTP ${current} ${status.name}: ゴール。ティーポットに到達しました。`
+      : `HTTP ${current} ${status.name}: 正しい遷移です。次のヒントを確認してください。`;
+    requestInput.value = rules[current].sample;
+    render();
+    return;
+  }
+  const code = fallbackStatus(req);
+  const status = byCode[code] || byCode[400];
+  result.className = "result bad";
+  result.textContent = `HTTP ${code} ${status.name}: 順番を外したため 404 に飛ばされます。`;
+  goTo404();
+}
+
+function goTo404(){
+  window.setTimeout(() => {
+    window.location.href = "404.html";
+  }, 450);
+}
+
+function render(){
+  const status = byCode[current];
+  currentCode.textContent = current;
+  currentName.textContent = `${current} ${status.name}`;
+  currentMessage.textContent = `${status.emoji} ${status.message}`;
+  hintText.textContent = rules[current].hint;
+  statusGrid.innerHTML = "";
+  for(const [code,name] of statuses){
+    const link = document.createElement("a");
+    link.className = "cell";
+    if(route.includes(code)) link.classList.add("route");
+    if(visited.has(code)) link.classList.add("visited");
+    if(code === current) link.classList.add("current");
+    if(code === 418) link.classList.add("goal-cell");
+    if(code >= 400 && code !== 418) link.classList.add("trap");
+    link.href = visited.has(code) || code === current ? `${code}.html` : "404.html";
+    link.textContent = code;
+    link.title = `${code} ${name}`;
+    link.addEventListener("click", event => {
+      if(!visited.has(code) && code !== current){
+        event.preventDefault();
+        window.location.href = "404.html";
+      }
+    });
+    statusGrid.appendChild(link);
+  }
+  progress.innerHTML = "";
+  route.forEach(code => {
+    const item = document.createElement("div");
+    item.className = "step";
+    if(visited.has(code)) item.classList.add(code === 418 ? "goal" : "done");
+    progress.appendChild(item);
+  });
+}
+
+document.getElementById("sendButton").addEventListener("click",submitRequest);
+document.getElementById("sampleButton").addEventListener("click",() => {
+  requestInput.value = rules[current].sample;
+  requestInput.focus();
+});
+document.getElementById("resetButton").addEventListener("click",() => {
+  current = 100;
+  visited = new Set([100]);
+  result.className = "result";
+  result.textContent = "";
+  requestInput.value = rules[current].sample;
+  render();
+});
+
+requestInput.value = rules[current].sample;
+render();
+</script>
+</body>
+</html>
