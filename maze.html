@@ -14,7 +14,7 @@
   --gold:#d3a84f;
   --blue:#66c7d8;
   --red:#ee6f59;
-  --green:#8fd36a;
+  --green:#d3a84f;
 }
 *{box-sizing:border-box}
 body{
@@ -97,7 +97,7 @@ button:hover{filter:brightness(1.08)}
     <div>
       <div class="kicker">nc request maze</div>
       <h1>HTTP Request Maze</h1>
-      <p class="sub">raw HTTP request をフォームに送って、返るステータスコードを意図的に変えながら進む迷路です。現在地のヒントを読み、最後は 418 のティーポットへ到達してください。</p>
+      <p class="sub">raw HTTP request をフォームに送って、返るステータスコードのページへ進む迷路です。各ページに書かれたヒントを読み、正しい順番で奥へ進んでください。</p>
     </div>
     <a class="home" href="index.html">一覧へ戻る</a>
   </header>
@@ -122,7 +122,7 @@ button:hover{filter:brightness(1.08)}
       <section class="panel map">
         <div class="map-head">
           <div class="map-title">Status Map</div>
-          <div class="legend">金:通過済み / 青:現在地 / 緑:ゴール</div>
+          <div class="legend">金:通過済み / 青:現在地 / 枠線:正規ルート</div>
         </div>
         <div class="grid" id="statusGrid"></div>
       </section>
@@ -256,7 +256,7 @@ const rules = {
     next: 303
   },
   303: {
-    hint: "最後はコーヒーではなくティーポットに尋ねる。BREW /teapot に Accept: message/teapot を付ける。",
+    hint: "コーヒーではなくティーポットに尋ねる。BREW /teapot に Accept: message/teapot を付ける。",
     sample: "BREW /teapot HTTP/1.1\r\nHost: maze.local\r\nAccept: message/teapot\r\n\r\n",
     test: req => req.method === "BREW" && req.path === "/teapot" && has(req,"accept","message/teapot"),
     next: 418
@@ -345,15 +345,14 @@ function submitRequest(){
     return;
   }
   if(rule.test(req)){
-    current = rule.next;
-    visited.add(current);
-    const status = byCode[current];
-    result.className = current === 418 ? "result ok" : "result ok";
-    result.textContent = current === 418
-      ? `HTTP ${current} ${status.name}: ゴール。ティーポットに到達しました。`
-      : `HTTP ${current} ${status.name}: 正しい遷移です。次のヒントを確認してください。`;
-    requestInput.value = rules[current].sample;
-    render();
+    const next = rule.next;
+    const status = byCode[next];
+    localStorage.setItem("mazeExpected", String(next));
+    result.className = "result ok";
+    result.textContent = `HTTP ${next} ${status.name}: ${next}.html に遷移します。`;
+    window.setTimeout(() => {
+      window.location.href = `${next}.html`;
+    }, 450);
     return;
   }
   const code = fallbackStatus(req);
@@ -364,6 +363,7 @@ function submitRequest(){
 }
 
 function goTo404(){
+  localStorage.setItem("mazeExpected", "100");
   window.setTimeout(() => {
     window.location.href = "404.html";
   }, 450);
@@ -412,6 +412,7 @@ document.getElementById("sampleButton").addEventListener("click",() => {
 document.getElementById("resetButton").addEventListener("click",() => {
   current = 100;
   visited = new Set([100]);
+  localStorage.setItem("mazeExpected", "100");
   result.className = "result";
   result.textContent = "";
   requestInput.value = rules[current].sample;
