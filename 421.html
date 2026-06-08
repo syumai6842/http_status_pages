@@ -1,15 +1,56 @@
 <!doctype html>
 <html lang="ja">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>421 Misdirected Request</title>
 <style>
-body{text-align:center;font-family:sans-serif;margin:0}
-h1{background:#333;color:white;margin:0;padding:1em}
-.dummy{font-size:128px}
+:root{--bg:#0d0d0b;--panel:#181711;--panel2:#232016;--ink:#f7f0dc;--muted:#aaa089;--line:#3a3528;--gold:#d0a64e;--blue:#6cc7d7;--red:#e56f57;--green:#91d66d}
+*{box-sizing:border-box}
+body{min-height:100vh;margin:0;color:var(--ink);font-family:Georgia,"Yu Mincho","Hiragino Mincho ProN",serif;background:linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.035) 1px,transparent 1px),radial-gradient(circle at 18% 18%,rgba(208,166,78,.18),transparent 28rem),radial-gradient(circle at 82% 76%,rgba(108,199,215,.12),transparent 24rem),var(--bg);background-size:34px 34px,34px 34px,auto,auto,auto;display:grid;place-items:center;padding:26px}
+body:before{content:"";position:fixed;inset:14px;border:1px solid rgba(208,166,78,.22);pointer-events:none;background:linear-gradient(90deg,transparent 0 18%,rgba(208,166,78,.2) 18% 18.5%,transparent 18.5% 43%,rgba(208,166,78,.16) 43% 43.5%,transparent 43.5% 78%,rgba(208,166,78,.18) 78% 78.4%,transparent 78.4%),linear-gradient(0deg,transparent 0 23%,rgba(208,166,78,.16) 23% 23.5%,transparent 23.5% 58%,rgba(208,166,78,.2) 58% 58.4%,transparent 58.4%)}
+.card{width:min(760px,100%);border:1px solid var(--line);border-radius:8px;background:rgba(24,23,17,.92);position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(208,166,78,.12),transparent 34%),repeating-linear-gradient(90deg,transparent 0 22px,rgba(255,255,255,.025) 22px 23px);pointer-events:none}
+.inner{position:relative;padding:22px}
+.nav{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:26px;color:var(--muted);font-size:14px}
+.nav a{color:var(--muted);text-decoration:none;border:1px solid var(--line);background:#11100d;padding:8px 10px;border-radius:6px}
+.nav a:hover{color:var(--ink);border-color:var(--gold)}
+.badge{letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-size:12px}
+.display{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:center}
+.symbol{aspect-ratio:1;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:linear-gradient(145deg,#0f0e0b,#242116);font-size:74px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+h1{font-size:clamp(36px,7vw,78px);line-height:.9;letter-spacing:0;margin:0;color:var(--ink)}
+.code{display:inline-block;color:var(--gold);font-variant-numeric:tabular-nums}
+.message{font-size:20px;line-height:1.75;color:var(--muted);margin:20px 0 0;max-width:56ch}
+.route{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:28px;color:var(--muted);font-size:13px}
+.route:before,.route:after{content:"";height:1px;background:var(--line)}
+.room{margin-top:18px;border:1px solid var(--line);border-radius:8px;background:#11100d;padding:14px 16px;color:var(--muted);line-height:1.65}
+.room strong{color:var(--ink)}
+.info .code,.info .badge{color:var(--blue)}
+.success .code,.success .badge{color:var(--green)}
+.redirect .code,.redirect .badge{color:var(--gold)}
+.client .code,.client .badge{color:var(--red)}
+.server .code,.server .badge{color:#d7976c}
+.goal .card{border-color:rgba(145,214,109,.7)}
+.goal .symbol{border-color:rgba(145,214,109,.55);box-shadow:0 0 40px rgba(145,214,109,.12),inset 0 0 0 1px rgba(255,255,255,.04)}
+.goal .code,.goal .badge{color:var(--green)}
+@media(max-width:680px){body{padding:14px}.display{grid-template-columns:1fr}.symbol{width:132px}.nav{align-items:flex-start;flex-direction:column}h1{font-size:42px}.message{font-size:17px}}
 </style>
-<body>
-<h1>421 Misdirected Request</h1>
-<div class="dummy">🧭❌</div>
-<p>行き先まちごうてるで。このサーバ宛ちゃうわ。</p>
+<body class="client">
+<main class="card">
+  <div class="inner">
+    <nav class="nav">
+      <span class="badge">DEAD-END WING</span>
+      <span><a href="maze.html">迷路へ</a> <a href="index.html">一覧へ</a></span>
+    </nav>
+    <section class="display">
+      <div class="symbol">🧭❌</div>
+      <div>
+        <h1><span class="code">421</span> Misdirected Request</h1>
+        <p class="message">行き先まちごうてるで。このサーバ宛ちゃうわ。</p>
+      </div>
+    </section>
+    <div class="route">HTTP STATUS ROOM</div>
+    <p class="room"><strong>421 Misdirected Request</strong> - この部屋はステータス迷路の一部です。正しい順番を外すと 404 に戻されます。</p>
+  </div>
+</main>
 </body>
 </html>
