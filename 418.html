@@ -13,6 +13,15 @@ button,textarea{font:inherit}.card{width:min(860px,100%);border:1px solid var(--
 </style>
 <body class="client">
 <main class="card"><div class="inner"><nav class="nav"><span class="badge">GOAL NODE</span><span><a href="maze.html">迷路へ</a> <a href="index.html">一覧へ</a></span></nav><section class="display"><div class="symbol">🫖</div><div><h1><span class="code">418</span> Unused</h1><p class="message">例のティーポットで有名やけど、IANAでは今は Unused やで。</p></div></section><div class="route">HTTP STATUS ROOM</div><p class="room"><strong>418 Unused</strong> - 迷路の終点です。入口へ戻るか、もう一度ルートを辿ってください。</p><section class="game-panel goal-panel"><div class="hint-label">GOAL</div><p class="hint-text">ティーポットに到達しました。ここが迷路の終点です。</p><button type="button" id="restartButton">100からやり直す</button></section></div></main>
-<script>if(localStorage.getItem("mazeExpected")!=="418"){window.location.replace("404.html");}else{localStorage.setItem("mazeExpected","complete");}document.getElementById("restartButton").addEventListener("click",()=>{localStorage.setItem("mazeExpected","100");window.location.href="100.html";});</script>
+<script>
+const panel=document.querySelector(".game-panel");
+if(localStorage.getItem("mazeExpected")!=="418"){
+  panel.classList.add("dead-panel");
+  panel.innerHTML='<div class="hint-label">LOCKED</div><p class="hint-text">この部屋の表示はまだ開いていません。正しい順番でここに来ると表示されます。</p><a class="button-link" href="100.html">100から始める</a>';
+}else{
+  localStorage.setItem("mazeExpected","complete");
+  document.getElementById("restartButton").addEventListener("click",()=>{localStorage.setItem("mazeExpected","100");window.location.href="100.html";});
+}
+</script>
 </body>
 </html>

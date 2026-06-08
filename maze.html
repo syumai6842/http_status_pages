@@ -358,15 +358,7 @@ function submitRequest(){
   const code = fallbackStatus(req);
   const status = byCode[code] || byCode[400];
   result.className = "result bad";
-  result.textContent = `HTTP ${code} ${status.name}: 順番を外したため 404 に飛ばされます。`;
-  goTo404();
-}
-
-function goTo404(){
-  localStorage.setItem("mazeExpected", "100");
-  window.setTimeout(() => {
-    window.location.href = "404.html";
-  }, 450);
+  result.textContent = `HTTP ${code} ${status.name}: リクエスト内容が違います。ページ遷移は起きません。`;
 }
 
 function render(){
@@ -384,13 +376,13 @@ function render(){
     if(code === current) link.classList.add("current");
     if(code === 418) link.classList.add("goal-cell");
     if(code >= 400 && code !== 418) link.classList.add("trap");
-    link.href = visited.has(code) || code === current ? `${code}.html` : "404.html";
+    link.href = `${code}.html`;
     link.textContent = code;
     link.title = `${code} ${name}`;
     link.addEventListener("click", event => {
       if(!visited.has(code) && code !== current){
         event.preventDefault();
-        window.location.href = "404.html";
+        window.location.href = `${code}.html`;
       }
     });
     statusGrid.appendChild(link);

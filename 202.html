@@ -22,8 +22,13 @@ Content-Length: 17
 const currentCode=202;
 const nextCode=201;
 const expected=localStorage.getItem("mazeExpected");
-if(currentCode!==100&&expected!==String(currentCode)){window.location.replace("404.html");}
+const panel=document.querySelector(".game-panel");
 if(currentCode===100){localStorage.setItem("mazeExpected","100");}
+const isUnlocked=currentCode===100||expected===String(currentCode);
+if(!isUnlocked){
+  panel.classList.add("dead-panel");
+  panel.innerHTML='<div class="hint-label">LOCKED</div><p class="hint-text">この部屋のヒントはまだ開いていません。正しい順番でここに来ると表示されます。</p><a class="button-link" href="100.html">100から始める</a>';
+}else{
 const requestInput=document.getElementById("requestInput");
 const result=document.getElementById("result");
 const sample="PUT /pots/teapot HTTP/1.1\r\nHost: maze.local\r\nContent-Type: application/json\r\nContent-Length: 17\r\n\r\n{\"name\":\"teapot\"}";
@@ -45,7 +50,6 @@ function get(req,name){return req.headers[name]||""}
 function has(req,name,value){return get(req,name).toLowerCase().includes(value)}
 function numberHeader(req,name){const value=Number.parseInt(get(req,name),10);return Number.isFinite(value)?value:-1}
 function isCorrect(req){return req.method === "PUT" && req.path === "/pots/teapot" && req.body.includes('"name"') && req.body.includes('"teapot"');}
-function goTo404(){localStorage.setItem("mazeExpected","100");window.setTimeout(()=>{window.location.href="404.html";},450);}
 document.getElementById("sendButton").addEventListener("click",()=>{
   const req=parseRequest(requestInput.value);
   if(isCorrect(req)){
@@ -56,11 +60,11 @@ document.getElementById("sendButton").addEventListener("click",()=>{
     return;
   }
   result.className="result bad";
-  result.textContent="順番またはリクエスト内容が違います。404 に飛ばされます。";
-  goTo404();
+  result.textContent="リクエスト内容が違います。ページ遷移は起きません。";
 });
 document.getElementById("sampleButton").addEventListener("click",()=>{requestInput.value=sample;requestInput.focus();});
 document.getElementById("restartButton").addEventListener("click",()=>{localStorage.setItem("mazeExpected","100");window.location.href="100.html";});
+}
 </script>
 </body>
 </html>
